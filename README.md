@@ -1,21 +1,49 @@
 # song-lyrics-to-ebook
 
-A visual Python application that searches for music artists, browses their albums, downloads song lyrics, and creates polished EPUB ebooks — ready to send to a Kindle or any compatible e-reader.
+A tool for searching music artists, browsing their albums, downloading song lyrics, and creating polished EPUB ebooks — ready to send to a Kindle or any compatible e-reader.
+
+Available in two forms:
+
+- **Web app** (GitHub Pages) — runs entirely in your browser, no installation needed → [`docs/`](docs/)
+- **Desktop app** (Python + tkinter) — full-featured local application with back-catalogue support
 
 ---
 
 ## Features
 
-| Feature | Detail |
-|---------|--------|
-| **Artist search** | Powered by the free [MusicBrainz](https://musicbrainz.org/) API — no account needed |
-| **Album browser** | Lists all albums, EPs, singles, and other releases; filterable by type |
-| **Track listing** | Shows every track with its duration |
-| **Lyrics download** | Choose between two sources (see *Settings* below) |
-| **Album artwork** | Front cover from the [Cover Art Archive](https://coverartarchive.org/) + any additional images (booklet, back cover, …) |
-| **EPUB creation** | Cover page → title page → table of contents → one chapter per song (with metadata) |
-| **Back catalogue** | One-click combined ebook of an artist's entire discography in chronological order |
-| **Kindle & e-reader support** | Saves as EPUB 3 (Kobo, Nook, Apple Books, modern Kindle) or EPUB 2 (older readers) |
+| Feature | Web app | Desktop app |
+|---------|:-------:|:-----------:|
+| **Artist search** (MusicBrainz) | ✓ | ✓ |
+| **Album browser** with type filter | ✓ | ✓ |
+| **Track listing** with durations | ✓ | ✓ |
+| **Lyrics download** (lyrics.ovh) | ✓ | ✓ |
+| **Genius lyrics** (with API token) | ✓ | ✓ |
+| **Album artwork** (Cover Art Archive) | ✓ | ✓ |
+| **EPUB creation** (cover → title → TOC → songs) | ✓ | ✓ |
+| **Back catalogue** (entire discography in one ebook) | — | ✓ |
+| **EPUB 2 / EPUB 3 format choice** | — | ✓ |
+| **Configurable output directory** | — | ✓ |
+| No installation needed | ✓ | — |
+
+---
+
+## Web app
+
+The `docs/` folder contains a static client-side web app that can be hosted on [GitHub Pages](https://pages.github.com/) or any static file host.
+
+### Workflow
+
+1. **Search** — enter an artist name and press **Search** or ↵.
+2. **Select artist** — click a result; their releases load automatically.
+3. **Select release** — use the type filter, then click an album; tracks appear on the right.
+4. **Create ebook** — press **⬇ Create Album Ebook**; lyrics are fetched and the EPUB is generated and downloaded entirely in your browser.
+
+### Settings (web)
+
+| Setting | Description |
+|---------|-------------|
+| **Genius API token** | Optional. Without a token, lyrics.ovh is used (free, no key). A Genius token gives better coverage — get one free at [genius.com/api-clients](https://genius.com/api-clients). |
+| **Include artwork** | Toggle download of the album's front cover. |
 
 ---
 
@@ -23,6 +51,26 @@ A visual Python application that searches for music artists, browses their album
 
 - Python 3.10 or newer
 - `tkinter` (usually bundled with Python; on Debian/Ubuntu: `sudo apt install python3-tk`)
+
+### macOS note (Homebrew Python)
+
+If you see `ModuleNotFoundError: No module named '_tkinter'`, your Python build does not include Tk.
+
+Install Tk support for your Homebrew Python version:
+
+```bash
+brew install python-tk@3.14
+```
+
+Then run the app again.
+
+### Logging
+
+Runtime errors are written to:
+
+`~/.config/song-lyrics-to-ebook/app.log`
+
+The log file rotates automatically (`app.log`, `app.log.1`, `app.log.2`, ...).
 
 Install Python dependencies:
 
@@ -71,7 +119,14 @@ Open the **Settings** tab to configure:
 
 ```
 song-lyrics-to-ebook/
-├── main.py               # Entry point
+├── docs/                 # Static web app (GitHub Pages)
+│   ├── index.html
+│   ├── css/style.css
+│   └── js/
+│       ├── api.js          # MusicBrainz / Cover Art / lyrics.ovh wrappers
+│       ├── epub.js         # Client-side EPUB 3 builder (uses JSZip)
+│       └── app.js          # UI controller
+├── main.py               # Desktop app entry point
 ├── requirements.txt
 └── src/
     ├── app.py            # tkinter GUI

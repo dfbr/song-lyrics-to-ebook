@@ -14,6 +14,7 @@ Tab 1 — Create Ebook
 Tab 2 — Settings
     Lyrics source, API keys, output format, output directory, artwork toggle.
 """
+import logging
 import os
 import queue
 import subprocess
@@ -29,6 +30,8 @@ from .api import musicbrainz as mb
 from .api import coverart as ca
 from .api.lyrics import clean_lyrics, get_lyrics_source
 from .ebook.builder import EbookBuilder
+
+logger = logging.getLogger(__name__)
 
 
 class LyricsToEbookApp(tk.Tk):
@@ -389,6 +392,16 @@ class LyricsToEbookApp(tk.Tk):
                         msg.get("paths", []), msg.get("error")
                     )
 
+                elif kind == "confirm_missing":
+                    action = self._prompt_missing_data_action(
+                        missing_cover=msg.get("missing_cover", False),
+                        missing_tracks=msg.get("missing_tracks", []),
+                        allow_retry=msg.get("allow_retry", True),
+                    )
+                    response_queue = msg.get("response_queue")
+                    if response_queue is not None:
+                        response_queue.put(action)
+
         except queue.Empty:
             pass
         finally:
@@ -427,6 +440,7 @@ class LyricsToEbookApp(tk.Tk):
                 }
             )
         except Exception as exc:  # noqa: BLE001
+            logger.exception("Search failed for query '%s'", query)
             self._queue.put({"type": "status", "text": f"Search error: {exc}"})
         finally:
             self._queue.put({"type": "enable_buttons"})
@@ -477,6 +491,7 @@ class LyricsToEbookApp(tk.Tk):
                 }
             )
         except Exception as exc:  # noqa: BLE001
+            logger.exception("Failed loading releases for artist id %s", artist_id)
             self._queue.put({"type": "status", "text": f"Error loading releases: {exc}"})
 
     def _refresh_releases(self) -> None:
@@ -556,6 +571,7 @@ class LyricsToEbookApp(tk.Tk):
                 }
             )
         except Exception as exc:  # noqa: BLE001
+            logger.exception("Failed loading tracks for release group id %s", release_group_id)
             self._queue.put({"type": "status", "text": f"Error loading tracks: {exc}"})
 
     def _populate_tracks(self, tracks: list[dict]) -> None:
@@ -574,12 +590,98 @@ class LyricsToEbookApp(tk.Tk):
     def _create_album_ebook(self) -> None:
         if not self._current_release_data or not self._selected_artist:
             return
+        if not self._confirm_output_directory():
+            return
         self._set_busy(True)
         self._progress_var.set(0)
         self._progress_label_var.set("")
         threading.Thread(
             target=self._album_ebook_worker, daemon=True
         ).start()
+
+    def _request_missing_data_action(
+        self,
+        missing_cover: bool,
+        missing_tracks: list[str],
+        allow_retry: bool,
+    ) -> str:
+        """Request a user decision from the UI thread and block worker until answered."""
+        response_queue: queue.Queue[str] = queue.Queue(maxsize=1)
+        self._queue.put(
+            {
+                "type": "confirm_missing",
+                "missing_cover": missing_cover,
+                "missing_tracks": missing_tracks,
+                "allow_retry": allow_retry,
+                "response_queue": response_queue,
+            }
+        )
+        return response_queue.get()
+
+    def _prompt_missing_data_action(
+        self,
+        missing_cover: bool,
+        missing_tracks: list[str],
+        allow_retry: bool,
+    ) -> str:
+        """Show missing data details and return one of: retry, continue, cancel."""
+        lines = []
+        if missing_cover:
+            lines.append("- Album cover art")
+        if missing_tracks:
+            preview = missing_tracks[:8]
+            lines.append(f"- Lyrics for {len(missing_tracks)} track(s):")
+            lines.extend([f"  - {title}" for title in preview])
+            if len(missing_tracks) > len(preview):
+                lines.append(f"  - ...and {len(missing_tracks) - len(preview)} more")
+
+        details = "\n".join(lines) if lines else "- Unknown missing elements"
+
+        if allow_retry:
+            message = (
+                "Some content could not be retrieved:\n\n"
+                f"{details}\n\n"
+                "Retry only missing items before creating the ebook?\n\n"
+                "Yes = Retry missing items\n"
+                "No = Continue without them\n"
+                "Cancel = Abort creation"
+            )
+            choice = messagebox.askyesnocancel("Missing Data", message)
+            if choice is True:
+                return "retry"
+            if choice is False:
+                return "continue"
+            return "cancel"
+
+        message = (
+            "Some content is still missing after retry:\n\n"
+            f"{details}\n\n"
+            "Continue creating the ebook without these items?"
+        )
+        return "continue" if messagebox.askyesno("Still Missing Data", message) else "cancel"
+
+    def _confirm_output_directory(self) -> bool:
+        """Ask user to confirm output directory before writing files."""
+        output_dir = self.settings.get("output_dir")
+        if not output_dir:
+            messagebox.showerror("Missing Output Directory", "Please set an output directory in Settings.")
+            return False
+
+        confirm = messagebox.askyesno(
+            "Confirm Output Directory",
+            f"The ebook will be written to:\n\n{output_dir}\n\nContinue?",
+        )
+        if not confirm:
+            return False
+
+        try:
+            os.makedirs(output_dir, exist_ok=True)
+        except OSError as exc:
+            messagebox.showerror("Output Directory Error", f"Could not access output directory:\n\n{exc}")
+            logger.exception("Output directory is not writable: %s", output_dir)
+            return False
+
+        return True
 
     def _album_ebook_worker(self) -> None:
         try:
@@ -646,6 +748,69 @@ class LyricsToEbookApp(tk.Tk):
                     if raw:
                         lyrics_map[pos] = clean_lyrics(raw)
 
+            missing_cover = include_art and not cover_image
+            missing_tracks = [
+                track.get("title", "Unknown")
+                for track in tracks
+                if track.get("position", 0) not in lyrics_map
+            ]
+
+            if missing_cover or missing_tracks:
+                logger.warning(
+                    "Initial fetch missing data: cover=%s missing_lyrics=%s",
+                    missing_cover,
+                    len(missing_tracks),
+                )
+                action = self._request_missing_data_action(
+                    missing_cover=missing_cover,
+                    missing_tracks=missing_tracks,
+                    allow_retry=True,
+                )
+
+                if action == "cancel":
+                    self._queue.put({"type": "done", "error": "Creation cancelled by user."})
+                    return
+
+                if action == "retry":
+                    _progress("Retrying missing items…")
+                    if missing_cover and include_art:
+                        cover_image = ca.get_front_cover(release_id)
+
+                    missing_positions = {
+                        track.get("position", 0)
+                        for track in tracks
+                        if track.get("position", 0) not in lyrics_map
+                    }
+                    for track in tracks:
+                        pos = track.get("position", 0)
+                        title = track.get("title", "")
+                        if pos not in missing_positions or not title:
+                            continue
+                        raw = lyrics_src.get_lyrics(artist_name, title)
+                        if raw:
+                            lyrics_map[pos] = clean_lyrics(raw)
+
+                    missing_cover = include_art and not cover_image
+                    missing_tracks = [
+                        track.get("title", "Unknown")
+                        for track in tracks
+                        if track.get("position", 0) not in lyrics_map
+                    ]
+                    if missing_cover or missing_tracks:
+                        logger.warning(
+                            "Data still missing after retry: cover=%s missing_lyrics=%s",
+                            missing_cover,
+                            len(missing_tracks),
+                        )
+                        action = self._request_missing_data_action(
+                            missing_cover=missing_cover,
+                            missing_tracks=missing_tracks,
+                            allow_retry=False,
+                        )
+                        if action == "cancel":
+                            self._queue.put({"type": "done", "error": "Creation cancelled by user."})
+                            return
+
             _progress("Building EPUB…")
             builder = EbookBuilder(
                 output_format=self.settings.get("output_format", "epub")
@@ -664,10 +829,13 @@ class LyricsToEbookApp(tk.Tk):
             self._queue.put({"type": "done", "path": output_path})
 
         except Exception as exc:  # noqa: BLE001
+            logger.exception("Album ebook creation failed")
             self._queue.put({"type": "done", "error": str(exc)})
 
     def _create_catalogue_ebook(self) -> None:
         if not self._selected_artist or not self._release_groups:
+            return
+        if not self._confirm_output_directory():
             return
         self._set_busy(True)
         self._progress_var.set(0)
@@ -745,6 +913,11 @@ class LyricsToEbookApp(tk.Tk):
                         }
                     )
                 except Exception:  # noqa: BLE001
+                    logger.exception(
+                        "Skipping release group due to processing error: id=%s title=%s",
+                        rg.get("id", ""),
+                        rg.get("title", ""),
+                    )
                     continue  # skip problematic releases silently
 
             if not albums_data:
@@ -771,6 +944,7 @@ class LyricsToEbookApp(tk.Tk):
             self._queue.put({"type": "catalogue_done", "paths": [output_path]})
 
         except Exception as exc:  # noqa: BLE001
+            logger.exception("Catalogue ebook creation failed")
             self._queue.put({"type": "catalogue_done", "error": str(exc)})
 
     # ------------------------------------------------------------------
@@ -870,4 +1044,4 @@ def _open_folder(path: str) -> None:
         else:
             subprocess.Popen(["xdg-open", path])
     except Exception:  # noqa: BLE001
-        pass
+        logger.exception("Failed to open folder: %s", path)

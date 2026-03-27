@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Song Lyrics to Ebook</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header>
+    <h1>🎵 Song Lyrics to Ebook</h1>
+    <p class="subtitle">Search for an artist, pick an album, and download a lyrics ebook — all in your browser</p>
+  </header>
+
+  <main>
+    <!-- Search bar -->
+    <section class="search-section">
+      <div class="search-bar">
+        <input
+          type="search"
+          id="searchInput"
+          placeholder="Enter artist name…"
+          autocomplete="off"
+          autocorrect="off"
+          spellcheck="false"
+        />
+        <button id="searchBtn">Search</button>
+      </div>
+      <p id="statusMsg" class="status" aria-live="polite"></p>
+    </section>
+
+    <!-- Three-column browser -->
+    <section class="content-area" aria-label="Music browser">
+      <!-- Artists -->
+      <div class="panel" id="artistPanel">
+        <div class="panel-header"><h2>Artists</h2></div>
+        <ul id="artistList" class="selectable-list" role="listbox" aria-label="Artists"></ul>
+      </div>
+
+      <!-- Releases -->
+      <div class="panel" id="releasePanel">
+        <div class="panel-header">
+          <h2>Albums / Releases</h2>
+          <label class="filter-label" for="typeFilter">Type:</label>
+          <select id="typeFilter" aria-label="Filter by release type">
+            <option value="All">All</option>
+            <option value="Album" selected>Album</option>
+            <option value="Single">Single</option>
+            <option value="EP">EP</option>
+            <option value="Broadcast">Broadcast</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <ul id="releaseList" class="selectable-list" role="listbox" aria-label="Albums and releases"></ul>
+      </div>
+
+      <!-- Tracks -->
+      <div class="panel" id="trackPanel">
+        <div class="panel-header"><h2>Tracks</h2></div>
+        <ul id="trackList" class="track-list" aria-label="Track listing"></ul>
+      </div>
+    </section>
+
+    <!-- Action area -->
+    <section class="action-area">
+      <button id="createEbookBtn" disabled>⬇ Create Album Ebook</button>
+
+      <div class="progress-container" id="progressContainer" hidden>
+        <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progressBar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <p id="progressLabel" class="progress-label"></p>
+      </div>
+    </section>
+
+    <!-- Settings (collapsed by default) -->
+    <details class="settings-section">
+      <summary>⚙ Settings</summary>
+      <div class="settings-content">
+        <label class="settings-label">
+          Genius API token <span class="hint-inline">(optional — higher-quality lyrics)</span>
+          <input
+            type="password"
+            id="geniusToken"
+            placeholder="Paste your Genius API token here"
+            autocomplete="off"
+          />
+        </label>
+        <p class="hint">
+          Without a token, <a href="https://lyricsovh.docs.apiary.io/" target="_blank" rel="noopener">lyrics.ovh</a> is used (free, no key needed).
+          A Genius token gives better coverage — get one free at
+          <a href="https://genius.com/api-clients" target="_blank" rel="noopener">genius.com/api-clients</a>.
+        </p>
+
+        <label class="settings-label">
+          <input type="checkbox" id="includeArtwork" checked />
+          Include album artwork in the ebook
+        </label>
+      </div>
+    </details>
+  </main>
+
+  <footer>
+    <p>
+      Data from <a href="https://musicbrainz.org/" target="_blank" rel="noopener">MusicBrainz</a>,
+      <a href="https://coverartarchive.org/" target="_blank" rel="noopener">Cover Art Archive</a>, and
+      <a href="https://lyricsovh.docs.apiary.io/" target="_blank" rel="noopener">lyrics.ovh</a>.
+      All free and publicly accessible. ·
+      <a href="https://github.com/dfbr/song-lyrics-to-ebook" target="_blank" rel="noopener">GitHub</a>
+    </p>
+  </footer>
+
+  <!-- JSZip for client-side EPUB generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"
+          integrity="sha512-XMVd28F1oH/O71fzwBnV7HucLxVwtxf26XV8P4wPk26EDxuGZ91N8bsOttmnomcCD3CS5ZMRL50H0GgOHvegtg=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/epub.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
