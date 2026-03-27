@@ -238,6 +238,37 @@ button:disabled {
   margin-top: 1px;
 }
 
+/* ── Album art ── */
+.album-art-wrapper {
+  padding: 0.65rem;
+  display: flex;
+  justify-content: center;
+  background: #f0f2f5;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.album-art {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: var(--radius);
+  display: block;
+  background: var(--border);
+}
+
+/* Placeholder shown when no real art is loaded (src is empty/unset) */
+.album-art.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  color: var(--muted);
+  background: #e4e8ee;
+  /* Prevent broken-image icon in browsers by hiding the element's default
+     broken-image appearance when src is a data-URI placeholder */
+}
+
 /* ── Track list ── */
 .track-list {
   list-style: none;

@@ -40,6 +40,48 @@
   const progressLabel     = document.getElementById("progressLabel");
   const geniusToken       = document.getElementById("geniusToken");
   const includeArtwork    = document.getElementById("includeArtwork");
+  const albumArt          = document.getElementById("albumArt");
+
+  /* ── Album art helpers ── */
+
+  // SVG placeholder — a simple music note inside a rounded square
+  const PLACEHOLDER_ART_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+    <rect width="120" height="120" rx="8" fill="#e4e8ee"/>
+    <text x="60" y="78" text-anchor="middle" font-size="52" fill="#9aa5b4">♪</text>
+  </svg>`;
+  const PLACEHOLDER_ART_SRC =
+    "data:image/svg+xml;charset=utf-8," + encodeURIComponent(PLACEHOLDER_ART_SVG);
+
+  let _currentArtBlobUrl = null;
+
+  function showPlaceholderArt() {
+    if (_currentArtBlobUrl) {
+      URL.revokeObjectURL(_currentArtBlobUrl);
+      _currentArtBlobUrl = null;
+    }
+    albumArt.src = PLACEHOLDER_ART_SRC;
+    albumArt.alt = "";
+    albumArt.title = "";
+  }
+
+  function showAlbumArt(arrayBuffer, albumTitle) {
+    if (_currentArtBlobUrl) {
+      URL.revokeObjectURL(_currentArtBlobUrl);
+      _currentArtBlobUrl = null;
+    }
+    if (!arrayBuffer) {
+      showPlaceholderArt();
+      return;
+    }
+    const blob = new Blob([arrayBuffer], { type: "image/jpeg" });
+    _currentArtBlobUrl = URL.createObjectURL(blob);
+    albumArt.src = _currentArtBlobUrl;
+    albumArt.alt = albumTitle ? `Album art for ${albumTitle}` : "Album art";
+    albumArt.title = albumArt.alt;
+  }
+
+  // Initialise with placeholder
+  showPlaceholderArt();
 
   /* ── Persist settings in localStorage ── */
 
@@ -140,6 +182,7 @@
     releaseList.innerHTML = "";
     trackList.innerHTML = "";
     createEbookBtn.disabled = true;
+    showPlaceholderArt();
 
     setBusy(true);
     setStatus(`Loading releases for ${artist.name}…`);
@@ -208,6 +251,7 @@
     currentReleaseInfo = null;
     trackList.innerHTML = "";
     createEbookBtn.disabled = true;
+    showPlaceholderArt();
 
     setBusy(true);
     setStatus(`Loading tracks for "${rg.title}"…`);
@@ -236,6 +280,17 @@
           ? `${tracks.length} track(s) loaded. Press "Create Album Ebook" to build the ebook.`
           : "No tracks found for this release."
       );
+
+      // Load cover art only for the selected album (non-blocking)
+      getCoverArt(chosen.id).then((artData) => {
+        // Only update if this album is still the selected one
+        if (selectedRelease && selectedRelease.id === chosen.id) {
+          showAlbumArt(artData, rg.title);
+        }
+      }).catch(() => {
+        // Non-fatal — placeholder remains
+      });
+
     } catch (err) {
       setStatus("Failed to load tracks: " + err.message, "error");
     } finally {
@@ -381,6 +436,7 @@
     createEbookBtn.disabled = true;
     progressContainer.hidden = true;
     setProgress(0, "");
+    showPlaceholderArt();
   }
 
 })();

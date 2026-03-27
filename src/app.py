@@ -15,6 +15,7 @@ Tab 2 — Settings
     Lyrics source, API keys, output format, output directory, artwork toggle.
 """
 import logging
+import io
 import os
 import queue
 import subprocess
@@ -25,6 +26,8 @@ from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 from typing import Optional
 
+from PIL import Image, ImageTk
+
 from .settings import LYRICS_SOURCES, OUTPUT_FORMATS, Settings
 from .api import musicbrainz as mb
 from .api import coverart as ca
@@ -32,6 +35,26 @@ from .api.lyrics import clean_lyrics, get_lyrics_source
 from .ebook.builder import EbookBuilder
 
 logger = logging.getLogger(__name__)
+
+# Size (pixels) for the album art thumbnail shown in the track panel
+_ART_SIZE = 140
+
+
+def _make_placeholder_image(size: int = _ART_SIZE) -> ImageTk.PhotoImage:
+    """Return a grey square PhotoImage used as the album art placeholder."""
+    img = Image.new("RGB", (size, size), color=(228, 232, 238))
+    return ImageTk.PhotoImage(img)
+
+
+def _bytes_to_photo(data: bytes, size: int = _ART_SIZE) -> ImageTk.PhotoImage:
+    """Convert raw image bytes to a square PhotoImage scaled to *size* pixels."""
+    img = Image.open(io.BytesIO(data)).convert("RGB")
+    img.thumbnail((size, size), Image.LANCZOS)
+    # Pad to exact square so the label size stays constant
+    square = Image.new("RGB", (size, size), color=(228, 232, 238))
+    offset = ((size - img.width) // 2, (size - img.height) // 2)
+    square.paste(img, offset)
+    return ImageTk.PhotoImage(square)
 
 
 class LyricsToEbookApp(tk.Tk):
@@ -52,6 +75,8 @@ class LyricsToEbookApp(tk.Tk):
         self._selected_artist: Optional[dict] = None
         self._selected_release_group: Optional[dict] = None
         self._current_release_data: Optional[dict] = None
+        # Keep a reference to the current album art PhotoImage to prevent GC
+        self._art_photo: Optional[ImageTk.PhotoImage] = None
 
         self._setup_style()
         self._build_ui()
@@ -167,6 +192,12 @@ class LyricsToEbookApp(tk.Tk):
         # --- Track list ---
         track_frame = ttk.LabelFrame(content, text="Tracks", padding=4)
         track_frame.grid(row=0, column=2, sticky="nsew", padx=(4, 0))
+
+        # Album art — packed first so it anchors to the bottom
+        self._art_label = tk.Label(track_frame, bd=0, relief=tk.FLAT)
+        self._art_label.pack(side=tk.BOTTOM, pady=(4, 2))
+        self._show_placeholder_art()
+
         self._track_lb = tk.Listbox(track_frame, selectmode=tk.SINGLE, exportselection=False)
         t_scroll = ttk.Scrollbar(track_frame, orient=tk.VERTICAL, command=self._track_lb.yview)
         self._track_lb.configure(yscrollcommand=t_scroll.set)
@@ -379,6 +410,9 @@ class LyricsToEbookApp(tk.Tk):
                     self._populate_tracks(msg["data"]["tracks"])
                     self._create_btn.config(state=tk.NORMAL)
 
+                elif kind == "album_art":
+                    self._show_album_art(msg.get("data"))
+
                 elif kind == "enable_buttons":
                     self._set_busy(False)
 
@@ -406,6 +440,26 @@ class LyricsToEbookApp(tk.Tk):
             pass
         finally:
             self.after(100, self._poll_queue)
+
+    # ------------------------------------------------------------------
+    # Album art helpers
+    # ------------------------------------------------------------------
+
+    def _show_placeholder_art(self) -> None:
+        """Reset the album art label to a grey placeholder image."""
+        self._art_photo = _make_placeholder_image()
+        self._art_label.config(image=self._art_photo)
+
+    def _show_album_art(self, data: bytes | None) -> None:
+        """Display *data* (raw image bytes) in the album art label, or placeholder."""
+        if data:
+            try:
+                self._art_photo = _bytes_to_photo(data)
+                self._art_label.config(image=self._art_photo)
+                return
+            except Exception:  # noqa: BLE001
+                logger.debug("Failed to decode album art image", exc_info=True)
+        self._show_placeholder_art()
 
     # ------------------------------------------------------------------
     # Search
@@ -471,6 +525,7 @@ class LyricsToEbookApp(tk.Tk):
         self._current_release_data = None
         self._create_btn.config(state=tk.DISABLED)
         self._catalogue_btn.config(state=tk.DISABLED)
+        self._show_placeholder_art()
         self._status_var.set(
             f"Loading releases for '{self._selected_artist['name']}'…"
         )
@@ -534,6 +589,7 @@ class LyricsToEbookApp(tk.Tk):
         self._track_lb.delete(0, tk.END)
         self._current_release_data = None
         self._create_btn.config(state=tk.DISABLED)
+        self._show_placeholder_art()
         self._status_var.set("Loading tracks…")
         threading.Thread(
             target=self._load_tracks_worker,
@@ -570,6 +626,9 @@ class LyricsToEbookApp(tk.Tk):
                     ),
                 }
             )
+            # Fetch and display cover art only for the selected album
+            art_data = ca.get_front_cover(release_id)
+            self._queue.put({"type": "album_art", "data": art_data})
         except Exception as exc:  # noqa: BLE001
             logger.exception("Failed loading tracks for release group id %s", release_group_id)
             self._queue.put({"type": "status", "text": f"Error loading tracks: {exc}"})
