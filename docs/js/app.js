@@ -1,8 +1,11 @@
 /**
  * app.js — UI controller for the Song Lyrics to Ebook web app.
  *
- * Depends on api.js (searchArtists, getArtistReleaseGroups, …) and
- * epub.js (buildAlbumEbook) being loaded first.
+ * Depends on (loaded before this file in this order):
+ *   utils.js  — slugify, fmtDuration, sleep, cleanLyrics, esc, lyricsToHtml
+ *   api.js    — searchArtists, getArtistReleaseGroups, getReleaseGroupReleases,
+ *               getReleaseTracks, getCoverArt, getLyrics
+ *   epub.js   — buildAlbumEbook
  *
  * No frameworks, no build step — runs directly in the browser.
  */

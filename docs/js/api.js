@@ -3,6 +3,8 @@
  *
  * All network calls are intentionally plain fetch() so that no build tools
  * or bundlers are required — the file can be served directly from GitHub Pages.
+ *
+ * Depends on utils.js being loaded first (for sleep, cleanLyrics).
  */
 
 "use strict";
@@ -11,13 +13,6 @@
 
 const MB_BASE = "https://musicbrainz.org/ws/2";
 const MB_USER_AGENT = "SongLyricsToEbook/1.0 (https://github.com/dfbr/song-lyrics-to-ebook)";
-
-/* ── Helpers ── */
-
-/** Resolve after `ms` milliseconds. */
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 /**
  * Perform a rate-limited GET to the MusicBrainz JSON API.
@@ -250,20 +245,4 @@ async function getLyricsOvh(artist, title) {
  */
 async function getLyrics(artist, title, geniusToken = "") {
   return getLyricsOvh(artist, title);
-}
-
-/**
- * Normalise lyrics text: collapse runs of blank lines to a single blank line
- * and strip leading/trailing whitespace.
- *
- * @param {string|null} raw
- * @returns {string}
- */
-function cleanLyrics(raw) {
-  if (!raw) return "";
-  return raw
-    .replace(/\r\n/g, "\n")
-    .replace(/[ \t]+\n/g, "\n")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
 }
