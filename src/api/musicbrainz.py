@@ -1,6 +1,9 @@
 """MusicBrainz API interface for artist and release metadata."""
+import logging
 import time
 import musicbrainzngs
+
+logger = logging.getLogger(__name__)
 
 musicbrainzngs.set_useragent(
     "SongLyricsToEbook",
@@ -68,7 +71,7 @@ def get_artist_release_groups(artist_id: str) -> list[dict]:
 
 def get_release_group_releases(release_group_id: str) -> list[dict]:
     """Return all releases that belong to a release group."""
-    result = musicbrainzngs.get_release_group(
+    result = musicbrainzngs.get_release_group_by_id(
         release_group_id,
         includes=["releases"],
     )
@@ -94,7 +97,7 @@ def get_release_tracks(release_id: str) -> tuple[dict, list[dict]]:
     Returns:
         (release_info dict, list of track dicts)
     """
-    result = musicbrainzngs.get_release(
+    result = musicbrainzngs.get_release_by_id(
         release_id,
         includes=["recordings", "artist-credits", "release-groups", "labels", "media"],
     )
@@ -149,4 +152,5 @@ def get_release_tracks(release_id: str) -> tuple[dict, list[dict]]:
                 }
             )
 
+    logger.info("Loaded %s tracks for release %s", len(tracks), release_id)
     return info, tracks

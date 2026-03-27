@@ -24,6 +24,26 @@ A visual Python application that searches for music artists, browses their album
 - Python 3.10 or newer
 - `tkinter` (usually bundled with Python; on Debian/Ubuntu: `sudo apt install python3-tk`)
 
+### macOS note (Homebrew Python)
+
+If you see `ModuleNotFoundError: No module named '_tkinter'`, your Python build does not include Tk.
+
+Install Tk support for your Homebrew Python version:
+
+```bash
+brew install python-tk@3.14
+```
+
+Then run the app again.
+
+### Logging
+
+Runtime errors are written to:
+
+`~/.config/song-lyrics-to-ebook/app.log`
+
+The log file rotates automatically (`app.log`, `app.log.1`, `app.log.2`, ...).
+
 Install Python dependencies:
 
 ```bash
