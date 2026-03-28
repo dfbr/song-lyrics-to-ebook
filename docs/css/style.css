@@ -442,6 +442,17 @@ footer a:hover {
   text-decoration: underline;
 }
 
+/* ── Disclaimer notice ── */
+.disclaimer-notice {
+  background: #fffbe6;
+  border: 1px solid #f5e642;
+  border-radius: var(--radius);
+  padding: 0.65rem 1rem;
+  font-size: 0.82rem;
+  color: #5a4a00;
+  flex-shrink: 0;
+}
+
 /* ── Responsive ── */
 @media (max-width: 780px) {
   body {

@@ -391,6 +391,83 @@ class TestEbookBuilder:
         )
         assert os.path.exists(path)
 
+    def _read_epub_titlepage(self, path: str) -> str:
+        """Return the text content of title_page.xhtml inside the EPUB."""
+        import zipfile
+        with zipfile.ZipFile(path) as z:
+            names = z.namelist()
+            tp_name = next((n for n in names if "title_page" in n), None)
+            assert tp_name is not None, f"title_page.xhtml not found in {names}"
+            return z.read(tp_name).decode("utf-8")
+
+    def test_build_album_book_disclaimer_in_titlepage(self, tmp_path):
+        from src.ebook.builder import EbookBuilder
+        builder = EbookBuilder()
+        artist, release, tracks, lyrics = self._base_data()
+        path = builder.build_album_book(
+            artist_info=artist,
+            release_info=release,
+            tracks=tracks,
+            lyrics_map=lyrics,
+            output_dir=str(tmp_path),
+        )
+        content = self._read_epub_titlepage(path)
+        assert "non-commercial" in content
+        assert "personal" in content
+        assert "copyright" in content
+
+    def test_build_album_book_lyrics_source_default(self, tmp_path):
+        from src.ebook.builder import EbookBuilder
+        builder = EbookBuilder()
+        artist, release, tracks, lyrics = self._base_data()
+        path = builder.build_album_book(
+            artist_info=artist,
+            release_info=release,
+            tracks=tracks,
+            lyrics_map=lyrics,
+            output_dir=str(tmp_path),
+        )
+        content = self._read_epub_titlepage(path)
+        assert "lyrics.ovh" in content
+
+    def test_build_album_book_lyrics_source_genius(self, tmp_path):
+        from src.ebook.builder import EbookBuilder
+        builder = EbookBuilder()
+        artist, release, tracks, lyrics = self._base_data()
+        path = builder.build_album_book(
+            artist_info=artist,
+            release_info=release,
+            tracks=tracks,
+            lyrics_map=lyrics,
+            output_dir=str(tmp_path),
+            lyrics_source="Genius",
+        )
+        content = self._read_epub_titlepage(path)
+        assert "Genius" in content
+
+    def test_build_catalogue_book_disclaimer_in_titlepage(self, tmp_path):
+        from src.ebook.builder import EbookBuilder
+        builder = EbookBuilder()
+        artist, release, tracks, lyrics = self._base_data()
+        albums_data = [
+            {
+                "release_info": release,
+                "tracks": tracks,
+                "lyrics_map": lyrics,
+                "cover_image": None,
+                "additional_images": [],
+            }
+        ]
+        path = builder.build_catalogue_book(
+            artist_info=artist,
+            albums_data=albums_data,
+            output_dir=str(tmp_path),
+            lyrics_source="Genius",
+        )
+        content = self._read_epub_titlepage(path)
+        assert "non-commercial" in content
+        assert "Genius" in content
+
 
 # ---------------------------------------------------------------------------
 # Cover Art tests (mocked network)
