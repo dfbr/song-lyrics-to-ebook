@@ -382,12 +382,14 @@
 
       /* Step 3: build EPUB */
       setProgress(75, "Building EPUB…");
+      const lyricsSource = token ? "Genius" : "lyrics.ovh";
       const blob = await buildAlbumEbook(
         selectedArtist,
         currentReleaseInfo,
         currentTracks,
         lyricsMap,
-        coverData
+        coverData,
+        lyricsSource
       );
 
       /* Step 4: trigger download */
