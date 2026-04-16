@@ -76,22 +76,13 @@ p.song-meta     { color: #666; font-size: 0.85em; margin-bottom: 1.5em; }
   }
 
   /* ── Cover page ── */
-  const coverPageXhtml = coverImage
-    ? `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml"
-      xmlns:epub="http://www.idpf.org/2007/ops"
-      xml:lang="en" lang="en">
-<head>
-  <meta charset="UTF-8"/>
-  <title>Cover</title>
-  <style>body{margin:0;padding:0;text-align:center;background:#000;}img{max-width:100%;max-height:100vh;}</style>
-</head>
-<body epub:type="cover">
-  <img src="cover.jpg" alt="${esc(albumTitle)} cover art"/>
-</body>
-</html>`
-    : `<?xml version="1.0" encoding="UTF-8"?>
+  const coverDensity = coverDensityClass(artistName, albumTitle);
+  const coverImageHtml = coverImage
+    ? `<img class="cover-image" src="cover.jpg" alt="${esc(albumTitle)} cover art"/>`
+    : "";
+  const coverYearHtml = releaseYear ? `<p class="cover-year">${esc(releaseYear)}</p>` : "";
+
+  const coverPageXhtml = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:epub="http://www.idpf.org/2007/ops"
@@ -100,15 +91,85 @@ p.song-meta     { color: #666; font-size: 0.85em; margin-bottom: 1.5em; }
   <meta charset="UTF-8"/>
   <title>Cover</title>
   <style>
-    body{margin:3em 2em;font-family:serif;text-align:center;}
-    h1{font-size:2.2em;margin-bottom:0.2em;}
-    p{color:#555;}
+    body{margin:0;padding:0;}
+    .cover-page{
+      min-height:100vh;
+      box-sizing:border-box;
+      padding:7vh 8vw 4vh;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      gap:3vh;
+      background:#f7f6f2;
+      color:#1d1d1d;
+      text-align:center;
+    }
+    .cover-top{
+      margin:0 auto;
+      width:100%;
+      max-width:38em;
+    }
+    .cover-artist,
+    .cover-album,
+    .cover-year{
+      font-family:"Avenir Next","Helvetica Neue",Helvetica,Arial,sans-serif;
+      margin:0;
+      hyphens:none;
+      word-break:normal;
+      overflow-wrap:normal;
+    }
+    .cover-artist{
+      text-transform:uppercase;
+      letter-spacing:0.18em;
+      color:#565656;
+      font-size:0.95rem;
+      margin-bottom:0.8rem;
+    }
+    .cover-album{
+      line-height:1.1;
+      margin-bottom:0.7rem;
+      color:#121212;
+      font-size:2.2rem;
+      font-weight:700;
+    }
+    .cover-year{
+      letter-spacing:0.08em;
+      color:#6a6a6a;
+      font-size:1rem;
+    }
+    .cover-bottom{
+      flex:1 1 auto;
+      display:flex;
+      justify-content:center;
+      align-items:flex-end;
+    }
+    .cover-image{
+      max-width:75vw;
+      max-height:52vh;
+      width:auto;
+      height:auto;
+      object-fit:contain;
+      box-shadow:0 1.2rem 2.6rem rgba(0,0,0,.2);
+    }
+    .cover-density-compact .cover-album{font-size:1.9rem;}
+    .cover-density-compact .cover-artist,
+    .cover-density-compact .cover-year{font-size:0.9rem;}
+    .cover-density-tight .cover-album{font-size:1.62rem;line-height:1.08;}
+    .cover-density-tight .cover-artist,
+    .cover-density-tight .cover-year{font-size:0.82rem;}
   </style>
 </head>
 <body epub:type="cover">
-  <h1>${esc(albumTitle)}</h1>
-  <p>${esc(artistName)}</p>
-  ${releaseYear ? `<p>${esc(releaseYear)}</p>` : ""}
+  <div class="cover-page ${coverDensity}">
+    <div class="cover-top">
+      <p class="cover-artist">${esc(artistName)}</p>
+      <h1 class="cover-album">${esc(albumTitle)}</h1>
+      ${coverYearHtml}
+    </div>
+    <div class="cover-bottom">
+      ${coverImageHtml}
+    </div>
+  </div>
 </body>
 </html>`;
 
@@ -273,4 +334,14 @@ ${ncxNavPoints}
 
   /* ── Generate and return blob ── */
   return zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" });
+}
+
+function coverDensityClass(artistName, albumTitle) {
+  const totalLen = `${artistName || ""}${albumTitle || ""}`.trim().length;
+  const words = `${artistName || ""} ${albumTitle || ""}`.trim().split(/\s+/).filter(Boolean);
+  const longestWord = words.length > 0 ? words.reduce((maxLen, word) => Math.max(maxLen, word.length), 0) : 0;
+
+  if (totalLen > 92 || longestWord > 24) return "cover-density-tight";
+  if (totalLen > 68 || longestWord > 18) return "cover-density-compact";
+  return "cover-density-normal";
 }

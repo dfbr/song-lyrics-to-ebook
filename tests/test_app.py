@@ -7,6 +7,7 @@ import io
 import os
 import tempfile
 import json
+import zipfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -280,6 +281,33 @@ class TestEbookBuilder:
         )
         assert os.path.exists(path)
         assert os.path.getsize(path) > 2000  # larger due to image
+
+    def test_build_album_cover_page_has_top_metadata_and_bottom_art(self, tmp_path):
+        from src.ebook.builder import EbookBuilder
+        builder = EbookBuilder()
+        artist, release, tracks, lyrics = self._base_data()
+        cover = _make_jpeg()
+
+        path = builder.build_album_book(
+            artist_info=artist,
+            release_info=release,
+            tracks=tracks,
+            lyrics_map=lyrics,
+            cover_image=cover,
+            output_dir=str(tmp_path),
+        )
+
+        with zipfile.ZipFile(path, "r") as zf:
+            cover_page = zf.read("EPUB/cover_page.xhtml").decode("utf-8")
+            stylesheet = zf.read("EPUB/style.css").decode("utf-8")
+
+        assert 'class="cover-top"' in cover_page
+        assert 'class="cover-bottom"' in cover_page
+        assert "Test Artist" in cover_page
+        assert "Test Album" in cover_page
+        assert "2023" in cover_page
+        assert "hyphens: none;" in stylesheet
+        assert "align-items: flex-end;" in stylesheet
 
     def test_build_album_book_with_additional_images(self, tmp_path):
         from src.ebook.builder import EbookBuilder

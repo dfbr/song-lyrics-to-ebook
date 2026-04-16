@@ -78,6 +78,20 @@ def _lyrics_to_html(lyrics: str | None) -> str:
     return "\n".join(html)
 
 
+def _cover_density_class(artist_name: str, album_title: str) -> str:
+    """Return a CSS class that scales cover typography for long text."""
+    total_len = len((artist_name or "").strip()) + len((album_title or "").strip())
+    longest_word = max(
+        [len(w) for w in f"{artist_name} {album_title}".split()] or [0]
+    )
+
+    if total_len > 92 or longest_word > 24:
+        return "cover-density-tight"
+    if total_len > 68 or longest_word > 18:
+        return "cover-density-compact"
+    return "cover-density-normal"
+
+
 def _process_image(raw: bytes, max_size: tuple[int, int] = (800, 800)) -> bytes:
     """Resize *raw* image bytes if needed and normalise to JPEG."""
     try:
@@ -113,8 +127,72 @@ body {
 h1 { font-size: 1.8em; margin: 0 0 0.3em 0; }
 h2 { font-size: 1.35em; color: #333; margin-top: 1.8em; }
 h3 { font-size: 1.1em; color: #555; }
-.cover-container { text-align: center; page-break-after: always; margin: 0; padding: 0; }
-.cover-image { max-width: 100%; max-height: 95vh; }
+.cover-page {
+    min-height: 100vh;
+    box-sizing: border-box;
+    padding: 7vh 8vw 4vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 3vh;
+    background: #f7f6f2;
+    color: #1d1d1d;
+    text-align: center;
+    page-break-after: always;
+}
+.cover-top {
+    margin: 0 auto;
+    width: 100%;
+    max-width: 38em;
+}
+.cover-artist,
+.cover-album,
+.cover-year {
+    font-family: "Avenir Next", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    margin: 0;
+    hyphens: none;
+    word-break: normal;
+    overflow-wrap: normal;
+}
+.cover-artist {
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: #565656;
+    font-size: 0.95rem;
+    margin-bottom: 0.8rem;
+}
+.cover-album {
+    line-height: 1.1;
+    margin-bottom: 0.7rem;
+    color: #121212;
+    font-size: 2.2rem;
+    font-weight: 700;
+}
+.cover-year {
+    letter-spacing: 0.08em;
+    color: #6a6a6a;
+    font-size: 1rem;
+}
+.cover-bottom {
+    flex: 1 1 auto;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+}
+.cover-image {
+    max-width: 75vw;
+    max-height: 52vh;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    box-shadow: 0 1.2rem 2.6rem rgba(0, 0, 0, 0.2);
+}
+.cover-density-compact .cover-album { font-size: 1.9rem; }
+.cover-density-compact .cover-artist,
+.cover-density-compact .cover-year { font-size: 0.9rem; }
+.cover-density-tight .cover-album { font-size: 1.62rem; line-height: 1.08; }
+.cover-density-tight .cover-artist,
+.cover-density-tight .cover-year { font-size: 0.82rem; }
 .title-page { text-align: center; padding-top: 4em; }
 .metadata {
     color: #555;
@@ -219,14 +297,38 @@ class EbookBuilder:
         toc: list = []
 
         # ------ Cover page -----------------------------------------------
+        cover_density = _cover_density_class(artist_name, album_title)
+        year_html = f'<p class="cover-year">{_esc(year)}</p>' if year else ""
         if cover_image:
             cover_data = _process_image(cover_image)
             book.set_cover("cover.jpg", cover_data)
             cover_page = self._make_html(
                 "cover_page.xhtml",
                 "Cover",
-                '<div class="cover-container">'
+                f'<div class="cover-page {cover_density}">'
+                '<div class="cover-top">'
+                f'<p class="cover-artist">{_esc(artist_name)}</p>'
+                f'<h1 class="cover-album">{_esc(album_title)}</h1>'
+                f"{year_html}"
+                "</div>"
+                '<div class="cover-bottom">'
                 '<img class="cover-image" src="cover.jpg" alt="Album Cover"/>'
+                "</div>"
+                "</div>",
+            )
+            book.add_item(cover_page)
+            spine.append(cover_page)
+        else:
+            cover_page = self._make_html(
+                "cover_page.xhtml",
+                "Cover",
+                f'<div class="cover-page {cover_density}">'
+                '<div class="cover-top">'
+                f'<p class="cover-artist">{_esc(artist_name)}</p>'
+                f'<h1 class="cover-album">{_esc(album_title)}</h1>'
+                f"{year_html}"
+                "</div>"
+                '<div class="cover-bottom"></div>'
                 "</div>",
             )
             book.add_item(cover_page)
