@@ -31,6 +31,7 @@
   const statusMsg         = document.getElementById("statusMsg");
   const artistList        = document.getElementById("artistList");
   const releaseList       = document.getElementById("releaseList");
+  const albumSearchInput  = document.getElementById("albumSearchInput");
   const trackList         = document.getElementById("trackList");
   const typeFilter        = document.getElementById("typeFilter");
   const createEbookBtn    = document.getElementById("createEbookBtn");
@@ -179,6 +180,7 @@
     selectedRelease = null;
     currentTracks = [];
     currentReleaseInfo = null;
+    albumSearchInput.value = "";
     releaseList.innerHTML = "";
     trackList.innerHTML = "";
     createEbookBtn.disabled = true;
@@ -208,13 +210,36 @@
     if (releaseGroups.length > 0) renderReleaseGroups();
   });
 
+  albumSearchInput.addEventListener("input", () => {
+    if (releaseGroups.length > 0) renderReleaseGroups();
+  });
+
+  albumSearchInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") e.preventDefault();
+  });
+
   function renderReleaseGroups() {
     const filterVal = typeFilter.value;
-    const visible = filterVal === "All"
-      ? releaseGroups
-      : releaseGroups.filter((rg) => rg.type === filterVal);
+    const query = (albumSearchInput.value || "").trim().toLowerCase();
+    const visible = releaseGroups.filter((rg) => {
+      const matchesType = filterVal === "All" || rg.type === filterVal;
+      if (!matchesType) return false;
+      if (!query) return true;
+
+      const year = (rg.firstReleaseDate || "").slice(0, 4);
+      const haystack = `${rg.title || ""} ${year} ${rg.type || ""}`.toLowerCase();
+      return haystack.includes(query);
+    });
 
     releaseList.innerHTML = "";
+
+    if (visible.length === 0) {
+      const li = document.createElement("li");
+      li.className = "empty-row";
+      li.textContent = "No releases match the current filters.";
+      releaseList.appendChild(li);
+      return;
+    }
 
     for (const rg of visible) {
       const li = document.createElement("li");
@@ -432,6 +457,7 @@
     selectedRelease = null;
     currentTracks = [];
     currentReleaseInfo = null;
+    albumSearchInput.value = "";
     artistList.innerHTML = "";
     releaseList.innerHTML = "";
     trackList.innerHTML = "";

@@ -41,15 +41,26 @@
       <div class="panel" id="releasePanel">
         <div class="panel-header">
           <h2>Albums / Releases</h2>
-          <label class="filter-label" for="typeFilter">Type:</label>
-          <select id="typeFilter" aria-label="Filter by release type">
-            <option value="All">All</option>
-            <option value="Album" selected>Album</option>
-            <option value="Single">Single</option>
-            <option value="EP">EP</option>
-            <option value="Broadcast">Broadcast</option>
-            <option value="Other">Other</option>
-          </select>
+          <div class="panel-controls">
+            <input
+              type="search"
+              id="albumSearchInput"
+              class="album-search-input"
+              placeholder="Search albums…"
+              aria-label="Search albums and releases"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <label class="filter-label" for="typeFilter">Type:</label>
+            <select id="typeFilter" aria-label="Filter by release type">
+              <option value="All">All</option>
+              <option value="Album" selected>Album</option>
+              <option value="Single">Single</option>
+              <option value="EP">EP</option>
+              <option value="Broadcast">Broadcast</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
         </div>
         <ul id="releaseList" class="selectable-list" role="listbox" aria-label="Albums and releases"></ul>
       </div>

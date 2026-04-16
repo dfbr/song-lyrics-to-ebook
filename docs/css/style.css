@@ -188,6 +188,30 @@ button:disabled {
   flex: 1;
 }
 
+.panel-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.album-search-input {
+  width: 170px;
+  max-width: 42vw;
+  font-size: 0.82rem;
+  padding: 0.28rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.album-search-input:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 2px rgba(26, 26, 46, 0.12);
+}
+
 .filter-label {
   font-size: 0.8rem;
   color: var(--muted);
@@ -232,6 +256,16 @@ button:disabled {
 
 .selectable-list li:last-child {
   border-bottom: none;
+}
+
+.selectable-list li.empty-row {
+  color: var(--muted);
+  font-style: italic;
+  cursor: default;
+}
+
+.selectable-list li.empty-row:hover {
+  background: transparent;
 }
 
 .item-name {
