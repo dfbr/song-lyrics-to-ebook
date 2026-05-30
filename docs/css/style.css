@@ -82,6 +82,15 @@ main {
   flex-wrap: wrap;
 }
 
+.search-bar select {
+  padding: 0.55rem 0.8rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.95rem;
+  background: var(--surface);
+  color: var(--text);
+}
+
 .search-bar input[type="search"] {
   flex: 1;
   min-width: 200px;

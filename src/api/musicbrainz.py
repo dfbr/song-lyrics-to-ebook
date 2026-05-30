@@ -29,6 +29,33 @@ def search_artists(query: str, limit: int = 25) -> list[dict]:
     return artists
 
 
+def search_release_groups(query: str, limit: int = 25) -> list[dict]:
+    """Search release groups by title and return simplified album entries."""
+    result = musicbrainzngs.search_release_groups(query=query, limit=limit)
+    groups = []
+    for rg in result.get("release-group-list", []):
+        artist_name = ""
+        artist_credit = rg.get("artist-credit", [])
+        if artist_credit:
+            first = artist_credit[0]
+            if isinstance(first, dict):
+                artist_name = first.get("artist", {}).get("name", "")
+
+        groups.append(
+            {
+                "id": rg.get("id", ""),
+                "title": rg.get("title", ""),
+                "type": rg.get("primary-type", rg.get("type", "Other")),
+                "primary_type": rg.get("primary-type", ""),
+                "secondary_types": rg.get("secondary-type-list", []),
+                "first_release_date": rg.get("first-release-date", ""),
+                "artist": artist_name,
+                "score": int(rg.get("ext:score", 0)),
+            }
+        )
+    return groups
+
+
 def get_artist_release_groups(artist_id: str) -> list[dict]:
     """
     Get all release groups (albums, singles, EPs, etc.) for an artist.
@@ -106,6 +133,7 @@ def get_release_tracks(release_id: str) -> tuple[dict, list[dict]]:
     info: dict = {
         "id": release.get("id", ""),
         "title": release.get("title", ""),
+        "artist": "",
         "date": release.get("date", ""),
         "status": release.get("status", ""),
         "country": release.get("country", ""),
@@ -116,6 +144,12 @@ def get_release_tracks(release_id: str) -> tuple[dict, list[dict]]:
         "type": "",
         "first_release_date": "",
     }
+
+    release_artist_credit = release.get("artist-credit", [])
+    if release_artist_credit:
+        first = release_artist_credit[0]
+        if isinstance(first, dict):
+            info["artist"] = first.get("artist", {}).get("name", "")
 
     for label_info in release.get("label-info-list", []):
         label = label_info.get("label", {})

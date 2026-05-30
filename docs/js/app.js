@@ -17,6 +17,7 @@
   /* ── Application state ── */
 
   let artists = [];
+  let albumResults = [];
   let releaseGroups = [];
   let selectedArtist = null;
   let selectedRelease = null;   // chosen release (edition) within a release group
@@ -27,6 +28,7 @@
   /* ── DOM references ── */
 
   const searchInput       = document.getElementById("searchInput");
+  const searchMode        = document.getElementById("searchMode");
   const searchBtn         = document.getElementById("searchBtn");
   const statusMsg         = document.getElementById("statusMsg");
   const artistList        = document.getElementById("artistList");
@@ -119,6 +121,7 @@
 
   async function doSearch() {
     const query = searchInput.value.trim();
+    const mode = searchMode.value;
     if (!query || isBusy) return;
 
     setBusy(true);
@@ -126,12 +129,22 @@
     setStatus("Searching…");
 
     try {
-      artists = await searchArtists(query);
-      if (artists.length === 0) {
-        setStatus("No artists found.");
+      if (mode === "album") {
+        albumResults = await searchReleaseGroups(query);
+        if (albumResults.length === 0) {
+          setStatus("No albums found.");
+        } else {
+          setStatus(`Found ${albumResults.length} album result(s). Click one to load its tracks.`);
+          renderAlbumResults();
+        }
       } else {
-        setStatus(`Found ${artists.length} artist(s). Click one to load their releases.`);
-        renderArtists();
+        artists = await searchArtists(query);
+        if (artists.length === 0) {
+          setStatus("No artists found.");
+        } else {
+          setStatus(`Found ${artists.length} artist(s). Click one to load their releases.`);
+          renderArtists();
+        }
       }
     } catch (err) {
       setStatus("Search failed: " + err.message, "error");
@@ -144,6 +157,7 @@
 
   function renderArtists() {
     artistList.innerHTML = "";
+    albumResults = [];
     for (const artist of artists) {
       const li = document.createElement("li");
       li.setAttribute("role", "option");
@@ -164,6 +178,35 @@
       }
 
       li.addEventListener("click", () => onArtistSelected(artist, li));
+      artistList.appendChild(li);
+    }
+  }
+
+  function renderAlbumResults() {
+    artistList.innerHTML = "";
+    artists = [];
+
+    for (const rg of albumResults) {
+      const li = document.createElement("li");
+      li.setAttribute("role", "option");
+
+      const name = document.createElement("span");
+      name.className = "item-name";
+      name.textContent = rg.title || "Untitled";
+      li.appendChild(name);
+
+      const parts = [];
+      if (rg.artist) parts.push(rg.artist);
+      if (rg.firstReleaseDate) parts.push(rg.firstReleaseDate.slice(0, 4));
+      if (rg.type) parts.push(rg.type);
+      if (parts.length > 0) {
+        const meta = document.createElement("span");
+        meta.className = "item-meta";
+        meta.textContent = parts.join(" \u00b7 ");
+        li.appendChild(meta);
+      }
+
+      li.addEventListener("click", () => onAlbumResultSelected(rg, li));
       artistList.appendChild(li);
     }
   }
@@ -199,6 +242,67 @@
       );
     } catch (err) {
       setStatus("Failed to load releases: " + err.message, "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onAlbumResultSelected(rg, li) {
+    if (isBusy) return;
+
+    selectedArtist = { id: "", name: rg.artist || "Various Artists" };
+    document.querySelectorAll("#artistList li").forEach((el) => el.classList.remove("selected"));
+    li.classList.add("selected");
+
+    releaseGroups = [];
+    selectedRelease = null;
+    currentTracks = [];
+    currentReleaseInfo = null;
+    albumSearchInput.value = "";
+    releaseList.innerHTML = "";
+    trackList.innerHTML = "";
+    createEbookBtn.disabled = true;
+    showPlaceholderArt();
+
+    setBusy(true);
+    setStatus(`Loading tracks for "${rg.title}"…`);
+
+    try {
+      const releases = await getReleaseGroupReleases(rg.id);
+      await sleep(1100);
+
+      const chosen = releases.find((r) => r.status === "Official") || releases[0];
+      if (!chosen) {
+        setStatus("No release editions found for this entry.", "error");
+        return;
+      }
+
+      selectedRelease = chosen;
+      const { info, tracks } = await getReleaseTracks(chosen.id);
+      currentReleaseInfo = info;
+      currentTracks = tracks;
+      if (info.artist) {
+        selectedArtist = { id: "", name: info.artist };
+      }
+
+      renderTracks();
+      createEbookBtn.disabled = false;
+      setStatus(
+        tracks.length > 0
+          ? `${tracks.length} track(s) loaded. Press "Create Album Ebook" to build the ebook.`
+          : "No tracks found for this release."
+      );
+
+      getCoverArt(chosen.id).then((artData) => {
+        if (selectedRelease && selectedRelease.id === chosen.id) {
+          showAlbumArt(artData, rg.title);
+        }
+      }).catch(() => {
+        // Non-fatal — placeholder remains
+      });
+
+    } catch (err) {
+      setStatus("Failed to load tracks: " + err.message, "error");
     } finally {
       setBusy(false);
     }
@@ -452,6 +556,7 @@
 
   function clearAll() {
     artists = [];
+    albumResults = [];
     releaseGroups = [];
     selectedArtist = null;
     selectedRelease = null;
@@ -466,5 +571,7 @@
     setProgress(0, "");
     showPlaceholderArt();
   }
+
+  searchMode.addEventListener("change", clearAll);
 
 })();

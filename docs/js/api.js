@@ -60,6 +60,33 @@ async function searchArtists(query, limit = 25) {
   }));
 }
 
+/**
+ * Search MusicBrainz for release groups (albums/releases) matching `query`.
+ * @param {string} query
+ * @param {number} [limit=25]
+ * @returns {Promise<Array<{id, title, type, primaryType, secondaryTypes, firstReleaseDate, artist, score}>>}
+ */
+async function searchReleaseGroups(query, limit = 25) {
+  const data = await mbGet("/release-group", { query, limit });
+  return (data["release-groups"] || []).map((rg) => {
+    const firstCredit = (rg["artist-credit"] || [])[0];
+    const artist = (firstCredit && typeof firstCredit === "object")
+      ? ((firstCredit.artist || {}).name || "")
+      : "";
+
+    return {
+      id: rg.id,
+      title: rg.title || "",
+      type: rg["primary-type"] || rg.type || "Other",
+      primaryType: rg["primary-type"] || "",
+      secondaryTypes: rg["secondary-types"] || [],
+      firstReleaseDate: rg["first-release-date"] || "",
+      artist,
+      score: rg.score || 0,
+    };
+  });
+}
+
 /* ── Release groups ── */
 
 /**
@@ -136,6 +163,7 @@ async function getReleaseTracks(releaseId) {
   const info = {
     id: data.id || "",
     title: data.title || "",
+    artist: "",
     date: data.date || "",
     status: data.status || "",
     country: data.country || "",
@@ -158,6 +186,11 @@ async function getReleaseTracks(releaseId) {
   info.releaseGroupId = rg.id || "";
   info.type = rg["primary-type"] || rg.type || "";
   info.firstReleaseDate = rg["first-release-date"] || "";
+
+  const releaseCredits = data["artist-credit"] || [];
+  if (releaseCredits.length > 0 && typeof releaseCredits[0] === "object") {
+    info.artist = (releaseCredits[0].artist || {}).name || "";
+  }
 
   const tracks = [];
   for (const medium of data.media || []) {

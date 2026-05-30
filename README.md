@@ -33,9 +33,9 @@ The `docs/` folder contains a static client-side web app that can be hosted on [
 
 ### Workflow
 
-1. **Search** — enter an artist name and press **Search** or ↵.
-2. **Select artist** — click a result; their releases load automatically.
-3. **Select release** — use the type filter, then click an album; tracks appear on the right.
+1. **Search** — choose **Artist** or **Album** mode, enter a query, then press **Search** or ↵.
+2. **Select result** — in Artist mode, choose an artist to load releases; in Album mode, choose an album result to load tracks directly.
+3. **Select release** — for Artist mode, use the type filter, then click an album; tracks appear on the right.
 4. **Create ebook** — press **⬇ Create Album Ebook**; lyrics are fetched and the EPUB is generated and downloaded entirely in your browser.
 
 ### Settings (web)
@@ -88,9 +88,9 @@ python main.py
 
 ### Workflow
 
-1. **Search** — type an artist name and press **Search** or **↵**.
-2. **Select artist** — click an artist in the left pane; their releases load automatically.
-3. **Select release** — use the type filter (All / Album / Single / EP …) then click a release; tracks appear on the right.
+1. **Search** — choose **Artist** or **Album** mode, enter a query, then press **Search** or **↵**.
+2. **Select result** — in Artist mode, click an artist in the left pane; in Album mode, click an album result to load tracks directly.
+3. **Select release** — in Artist mode, use the type filter (All / Album / Single / EP …) then click a release; tracks appear on the right.
 4. **Create ebook** — press **Create Album Ebook** to build a single-album EPUB, or **Create Entire Back Catalogue** to build a combined ebook for every release.
 5. **Open folder** — a dialog confirms the saved path and offers to open the output folder.
 

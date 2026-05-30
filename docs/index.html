@@ -9,17 +9,21 @@
 <body>
   <header>
     <h1>🎵 Song Lyrics to Ebook</h1>
-    <p class="subtitle">Search for an artist, pick an album, and download a lyrics ebook — all in your browser</p>
+    <p class="subtitle">Search by artist or album title, then download a lyrics ebook — all in your browser</p>
   </header>
 
   <main>
     <!-- Search bar -->
     <section class="search-section">
       <div class="search-bar">
+        <select id="searchMode" aria-label="Search mode">
+          <option value="artist" selected>Artist</option>
+          <option value="album">Album</option>
+        </select>
         <input
           type="search"
           id="searchInput"
-          placeholder="Enter artist name…"
+          placeholder="Enter artist or album title…"
           autocomplete="off"
           autocorrect="off"
           spellcheck="false"

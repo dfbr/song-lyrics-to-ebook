@@ -72,6 +72,7 @@ class LyricsToEbookApp(tk.Tk):
         # State
         self._artists: list[dict] = []
         self._release_groups: list[dict] = []
+        self._album_results: list[dict] = []
         self._selected_artist: Optional[dict] = None
         self._selected_release_group: Optional[dict] = None
         self._current_release_data: Optional[dict] = None
@@ -119,10 +120,22 @@ class LyricsToEbookApp(tk.Tk):
 
     def _build_main_tab(self, parent: ttk.Frame) -> None:
         # Search bar
-        search_outer = ttk.LabelFrame(parent, text="Artist Search", padding=8)
+        search_outer = ttk.LabelFrame(parent, text="Search", padding=8)
         search_outer.pack(fill=tk.X, padx=8, pady=(8, 4))
 
-        ttk.Label(search_outer, text="Artist name:").pack(side=tk.LEFT, padx=(0, 6))
+        ttk.Label(search_outer, text="Mode:").pack(side=tk.LEFT, padx=(0, 4))
+        self._search_mode_var = tk.StringVar(value="Artist")
+        mode_cb = ttk.Combobox(
+            search_outer,
+            textvariable=self._search_mode_var,
+            values=["Artist", "Album"],
+            state="readonly",
+            width=8,
+        )
+        mode_cb.pack(side=tk.LEFT, padx=(0, 10))
+        mode_cb.bind("<<ComboboxSelected>>", self._on_search_mode_changed)
+
+        ttk.Label(search_outer, text="Search term:").pack(side=tk.LEFT, padx=(0, 6))
         self._search_var = tk.StringVar()
         self._search_entry = ttk.Entry(
             search_outer, textvariable=self._search_var, width=38
@@ -136,7 +149,7 @@ class LyricsToEbookApp(tk.Tk):
         self._search_btn.pack(side=tk.LEFT, padx=(0, 8))
 
         self._status_var = tk.StringVar(
-            value="Enter an artist name and press Search or ↵"
+            value="Choose Artist or Album mode, enter a query, then press Search or ↵"
         )
         ttk.Label(
             search_outer, textvariable=self._status_var, style="Status.TLabel"
@@ -399,6 +412,9 @@ class LyricsToEbookApp(tk.Tk):
                 elif kind == "artists":
                     self._populate_artists(msg["data"])
 
+                elif kind == "album_results":
+                    self._populate_album_results(msg["data"])
+
                 elif kind == "releases":
                     self._release_groups = msg["data"]
                     self._refresh_releases()
@@ -461,6 +477,21 @@ class LyricsToEbookApp(tk.Tk):
                 logger.debug("Failed to decode album art image", exc_info=True)
         self._show_placeholder_art()
 
+    def _on_search_mode_changed(self, _event=None) -> None:
+        """Clear dependent lists when switching between artist and album search."""
+        self._artist_lb.selection_clear(0, tk.END)
+        self._release_lb.delete(0, tk.END)
+        self._track_lb.delete(0, tk.END)
+        self._artists = []
+        self._release_groups = []
+        self._album_results = []
+        self._selected_artist = None
+        self._selected_release_group = None
+        self._current_release_data = None
+        self._create_btn.config(state=tk.DISABLED)
+        self._catalogue_btn.config(state=tk.DISABLED)
+        self._show_placeholder_art()
+
     # ------------------------------------------------------------------
     # Search
     # ------------------------------------------------------------------
@@ -476,23 +507,45 @@ class LyricsToEbookApp(tk.Tk):
         self._track_lb.delete(0, tk.END)
         self._artists = []
         self._release_groups = []
+        self._album_results = []
         self._selected_artist = None
         self._selected_release_group = None
         self._current_release_data = None
         self._progress_var.set(0)
         self._progress_label_var.set("")
-        threading.Thread(target=self._search_worker, args=(query,), daemon=True).start()
+        mode = self._search_mode_var.get()
+        threading.Thread(
+            target=self._search_worker,
+            args=(query, mode),
+            daemon=True,
+        ).start()
 
-    def _search_worker(self, query: str) -> None:
+    def _search_worker(self, query: str, mode: str) -> None:
         try:
-            artists = mb.search_artists(query)
-            self._queue.put({"type": "artists", "data": artists})
-            self._queue.put(
-                {
-                    "type": "status",
-                    "text": f"Found {len(artists)} artist(s). Select one to see their releases.",
-                }
-            )
+            if mode == "Album":
+                albums = mb.search_release_groups(query)
+                self._queue.put({"type": "album_results", "data": albums})
+                self._queue.put(
+                    {
+                        "type": "status",
+                        "text": (
+                            f"Found {len(albums)} album result(s). "
+                            "Select one to load its tracks."
+                        ),
+                    }
+                )
+            else:
+                artists = mb.search_artists(query)
+                self._queue.put({"type": "artists", "data": artists})
+                self._queue.put(
+                    {
+                        "type": "status",
+                        "text": (
+                            f"Found {len(artists)} artist(s). "
+                            "Select one to see their releases."
+                        ),
+                    }
+                )
         except Exception as exc:  # noqa: BLE001
             logger.exception("Search failed for query '%s'", query)
             self._queue.put({"type": "status", "text": f"Search error: {exc}"})
@@ -501,6 +554,7 @@ class LyricsToEbookApp(tk.Tk):
 
     def _populate_artists(self, artists: list[dict]) -> None:
         self._artists = artists
+        self._album_results = []
         self._artist_lb.delete(0, tk.END)
         for artist in artists:
             label = artist["name"]
@@ -510,6 +564,22 @@ class LyricsToEbookApp(tk.Tk):
                 label += f" [{artist['country']}]"
             self._artist_lb.insert(tk.END, label)
 
+    def _populate_album_results(self, albums: list[dict]) -> None:
+        self._album_results = albums
+        self._artists = []
+        self._artist_lb.delete(0, tk.END)
+        for rg in albums:
+            title = rg.get("title", "Unknown")
+            artist = rg.get("artist", "Unknown Artist")
+            year = (rg.get("first_release_date") or "")[:4]
+            rg_type = rg.get("type") or rg.get("primary_type") or "Other"
+
+            parts = [f"{title} — {artist}"]
+            meta = [part for part in (year, rg_type) if part]
+            if meta:
+                parts.append(f"[{', '.join(meta)}]")
+            self._artist_lb.insert(tk.END, " ".join(parts))
+
     # ------------------------------------------------------------------
     # Release groups
     # ------------------------------------------------------------------
@@ -518,7 +588,8 @@ class LyricsToEbookApp(tk.Tk):
         sel = self._artist_lb.curselection()
         if not sel:
             return
-        self._selected_artist = self._artists[sel[0]]
+
+        mode = self._search_mode_var.get()
         self._release_lb.delete(0, tk.END)
         self._track_lb.delete(0, tk.END)
         self._release_groups = []
@@ -526,6 +597,27 @@ class LyricsToEbookApp(tk.Tk):
         self._create_btn.config(state=tk.DISABLED)
         self._catalogue_btn.config(state=tk.DISABLED)
         self._show_placeholder_art()
+
+        if mode == "Album":
+            if sel[0] >= len(self._album_results):
+                return
+            self._selected_release_group = self._album_results[sel[0]]
+            release_artist = self._selected_release_group.get("artist", "")
+            self._selected_artist = {
+                "id": "",
+                "name": release_artist or "Various Artists",
+            }
+            self._status_var.set(
+                f"Loading tracks for '{self._selected_release_group.get('title', 'selected album')}'…"
+            )
+            threading.Thread(
+                target=self._load_tracks_worker,
+                args=(self._selected_release_group["id"],),
+                daemon=True,
+            ).start()
+            return
+
+        self._selected_artist = self._artists[sel[0]]
         self._status_var.set(
             f"Loading releases for '{self._selected_artist['name']}'…"
         )
@@ -751,6 +843,7 @@ class LyricsToEbookApp(tk.Tk):
             artist_info = self._selected_artist
             artist_name: str = artist_info["name"]
             album_title: str = release_info.get("title", "Unknown")
+            release_artist_name: str = release_info.get("artist", "")
 
             # Merge release group type if available
             if self._selected_release_group:
@@ -803,7 +896,12 @@ class LyricsToEbookApp(tk.Tk):
                 pos = track.get("position", 0)
                 _progress(f"Lyrics: {title}")
                 if title:
-                    raw = lyrics_src.get_lyrics(artist_name, title)
+                    lyric_artist = (
+                        track.get("artist")
+                        or release_artist_name
+                        or artist_name
+                    )
+                    raw = lyrics_src.get_lyrics(lyric_artist, title)
                     if raw:
                         lyrics_map[pos] = clean_lyrics(raw)
 
@@ -845,7 +943,12 @@ class LyricsToEbookApp(tk.Tk):
                         title = track.get("title", "")
                         if pos not in missing_positions or not title:
                             continue
-                        raw = lyrics_src.get_lyrics(artist_name, title)
+                        lyric_artist = (
+                            track.get("artist")
+                            or release_artist_name
+                            or artist_name
+                        )
+                        raw = lyrics_src.get_lyrics(lyric_artist, title)
                         if raw:
                             lyrics_map[pos] = clean_lyrics(raw)
 
