@@ -34,6 +34,12 @@ body {
   flex-direction: column;
 }
 
+body.about-page {
+  height: auto;
+  min-height: 100vh;
+  overflow: auto;
+}
+
 /* ── Header ── */
 header {
   background: var(--brand);
@@ -494,7 +500,9 @@ button:disabled {
 }
 
 .page-main {
-  overflow-y: auto;
+  flex: 0 1 auto;
+  min-height: unset;
+  overflow: visible;
 }
 
 .page-shell {
