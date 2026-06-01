@@ -9,18 +9,20 @@
 }
 
 :root {
-  --brand:       #1a1a2e;
-  --brand-hover: #16213e;
-  --accent:      #e94560;
-  --bg:          #f4f6f8;
-  --surface:     #ffffff;
-  --border:      #dde1e7;
-  --text:        #1e2a38;
-  --muted:       #6b7a8d;
+  --brand:       #f3e3a1;
+  --brand-hover: #ead27b;
+  --brand-ink:   #4b3d1d;
+  --accent:      #d5b152;
+  --accent-hover:#c59f3c;
+  --bg:          #faf6e8;
+  --surface:     #fffdf6;
+  --border:      #e6ddbf;
+  --text:        #3d331c;
+  --muted:       #7a6b45;
   --success:     #27ae60;
   --error:       #c0392b;
   --radius:      8px;
-  --shadow:      0 1px 4px rgba(0,0,0,.08);
+  --shadow:      0 8px 24px rgba(93,78,31,.08);
 }
 
 body {
@@ -43,9 +45,9 @@ body.about-page {
 /* ── Header ── */
 header {
   background: var(--brand);
-  color: #fff;
+  color: var(--brand-ink);
   padding: 1.25rem 2rem;
-  box-shadow: 0 2px 6px rgba(0,0,0,.25);
+  box-shadow: 0 2px 10px rgba(93,78,31,.14);
   flex-shrink: 0;
 }
 
@@ -65,7 +67,7 @@ header h1 {
 header .subtitle {
   margin-top: 0.25rem;
   font-size: 0.9rem;
-  opacity: 0.7;
+  color: rgba(75,61,29,0.78);
 }
 
 .site-nav {
@@ -76,7 +78,7 @@ header .subtitle {
 }
 
 .site-nav a {
-  color: rgba(255,255,255,0.86);
+  color: rgba(75,61,29,0.84);
   text-decoration: none;
   font-weight: 600;
   font-size: 0.95rem;
@@ -84,7 +86,7 @@ header .subtitle {
 
 .site-nav a:hover,
 .site-nav a[aria-current="page"] {
-  color: #fff;
+  color: var(--brand-ink);
   text-decoration: underline;
   text-underline-offset: 0.18em;
 }
@@ -141,7 +143,7 @@ main {
 
 .search-bar input[type="search"]:focus {
   border-color: var(--brand);
-  box-shadow: 0 0 0 3px rgba(26,26,46,.12);
+  box-shadow: 0 0 0 3px rgba(213,177,82,.2);
 }
 
 /* ── Buttons ── */
@@ -157,7 +159,7 @@ button {
 
 #searchBtn {
   background: var(--brand);
-  color: #fff;
+  color: var(--brand-ink);
 }
 
 #searchBtn:hover:not(:disabled) {
@@ -166,13 +168,13 @@ button {
 
 #createEbookBtn {
   background: var(--accent);
-  color: #fff;
+  color: var(--brand-ink);
   padding: 0.6rem 1.6rem;
   font-size: 1rem;
 }
 
 #createEbookBtn:hover:not(:disabled) {
-  background: #c73652;
+  background: var(--accent-hover);
 }
 
 button:disabled {
@@ -217,7 +219,7 @@ button:disabled {
   align-items: center;
   gap: 0.6rem;
   padding: 0.6rem 0.9rem;
-  background: #f0f2f5;
+  background: #f8f1d7;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
@@ -252,7 +254,7 @@ button:disabled {
 .album-search-input:focus {
   outline: none;
   border-color: var(--brand);
-  box-shadow: 0 0 0 2px rgba(26, 26, 46, 0.12);
+  box-shadow: 0 0 0 2px rgba(213, 177, 82, 0.18);
 }
 
 .filter-label {
@@ -281,20 +283,20 @@ button:disabled {
 .selectable-list li {
   padding: 0.55rem 0.9rem;
   cursor: pointer;
-  border-bottom: 1px solid #f0f2f5;
+  border-bottom: 1px solid #f1e8cc;
   font-size: 0.9rem;
   transition: background 0.1s;
   user-select: none;
 }
 
 .selectable-list li:hover {
-  background: #f7f8fa;
+  background: #fbf6e5;
 }
 
 .selectable-list li.selected {
-  background: #e8eeff;
+  background: #f7edc8;
   font-weight: 600;
-  color: var(--brand);
+  color: var(--brand-ink);
 }
 
 .selectable-list li:last-child {
@@ -326,7 +328,7 @@ button:disabled {
   padding: 0.65rem;
   display: flex;
   justify-content: center;
-  background: #f0f2f5;
+  background: #f9f3df;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
@@ -347,7 +349,7 @@ button:disabled {
   justify-content: center;
   font-size: 2.5rem;
   color: var(--muted);
-  background: #e4e8ee;
+  background: #efe4bf;
   /* Prevent broken-image icon in browsers by hiding the element's default
      broken-image appearance when src is a data-URI placeholder */
 }
@@ -364,7 +366,7 @@ button:disabled {
   align-items: baseline;
   gap: 0.6rem;
   padding: 0.45rem 0.9rem;
-  border-bottom: 1px solid #f0f2f5;
+  border-bottom: 1px solid #f1e8cc;
   font-size: 0.875rem;
 }
 
@@ -408,7 +410,7 @@ button:disabled {
 
 .progress-bar {
   height: 7px;
-  background: #dde1e7;
+  background: #e6dcc0;
   border-radius: 4px;
   overflow: hidden;
   margin-bottom: 0.35rem;
@@ -496,7 +498,7 @@ button:disabled {
 }
 
 .hint a:hover {
-  color: var(--brand);
+  color: var(--brand-ink);
 }
 
 .page-main {
@@ -524,8 +526,8 @@ button:disabled {
 }
 
 .hero-card {
-  background: linear-gradient(135deg, rgba(26,26,46,0.98), rgba(22,33,62,0.93));
-  color: #fff;
+  background: linear-gradient(135deg, #fff3c7, #f1db8f);
+  color: var(--brand-ink);
 }
 
 .hero-card h2 {
@@ -561,12 +563,18 @@ button:disabled {
 }
 
 .workflow-diagram {
-  margin-top: 1rem;
+  width: fit-content;
+  max-width: 100%;
+  margin: 1rem auto 0;
   padding: 1rem;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: #fbfcfd;
+  background: #fff8df;
   overflow-x: auto;
+}
+
+.workflow-diagram .mermaid {
+  margin: 0;
 }
 
 .workflow-note {
@@ -578,7 +586,7 @@ button:disabled {
 /* ── Footer ── */
 footer {
   background: var(--brand);
-  color: rgba(255,255,255,0.55);
+  color: rgba(75,61,29,0.72);
   text-align: center;
   padding: 0.85rem 1.5rem;
   font-size: 0.8rem;
@@ -586,12 +594,12 @@ footer {
 }
 
 footer a {
-  color: rgba(255,255,255,0.75);
+  color: var(--brand-ink);
   text-decoration: none;
 }
 
 footer a:hover {
-  color: #fff;
+  color: #2f250e;
   text-decoration: underline;
 }
 
