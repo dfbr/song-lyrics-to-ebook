@@ -43,6 +43,13 @@ header {
   flex-shrink: 0;
 }
 
+.site-nav-bar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
 header h1 {
   font-size: 1.65rem;
   font-weight: 700;
@@ -53,6 +60,27 @@ header .subtitle {
   margin-top: 0.25rem;
   font-size: 0.9rem;
   opacity: 0.7;
+}
+
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.site-nav a {
+  color: rgba(255,255,255,0.86);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.site-nav a:hover,
+.site-nav a[aria-current="page"] {
+  color: #fff;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
 }
 
 /* ── Main content area ── */
@@ -465,6 +493,80 @@ button:disabled {
   color: var(--brand);
 }
 
+.page-main {
+  overflow-y: auto;
+}
+
+.page-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding-bottom: 2rem;
+}
+
+.hero-card,
+.info-card,
+.workflow-card,
+.tips-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.35rem 1.4rem;
+}
+
+.hero-card {
+  background: linear-gradient(135deg, rgba(26,26,46,0.98), rgba(22,33,62,0.93));
+  color: #fff;
+}
+
+.hero-card h2 {
+  font-size: 1.6rem;
+  margin-bottom: 0.7rem;
+}
+
+.hero-card p + p {
+  margin-top: 0.7rem;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.info-card h3,
+.workflow-card h2,
+.tips-card h2 {
+  margin-bottom: 0.7rem;
+}
+
+.workflow-steps,
+.tips-list {
+  margin: 0.9rem 0 0;
+  padding-left: 1.2rem;
+}
+
+.workflow-steps li,
+.tips-list li {
+  margin-bottom: 0.55rem;
+}
+
+.workflow-diagram {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #fbfcfd;
+  overflow-x: auto;
+}
+
+.workflow-note {
+  margin-top: 0.8rem;
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+
 /* ── Footer ── */
 footer {
   background: var(--brand);
@@ -503,6 +605,11 @@ footer a:hover {
     overflow: auto;
   }
 
+  .site-nav-bar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
   main {
     overflow: visible;
     min-height: unset;
@@ -517,6 +624,10 @@ footer a:hover {
   .panel {
     max-height: 240px;
     min-height: unset;
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr;
   }
 }
 

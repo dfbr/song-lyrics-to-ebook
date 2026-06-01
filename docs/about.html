@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>About | Song Lyrics to Ebook</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'neutral',
+      flowchart: {
+        curve: 'basis'
+      }
+    });
+  </script>
+</head>
+<body>
+  <header>
+    <div class="site-nav-bar">
+      <div>
+        <h1>🎵 Song Lyrics to Ebook</h1>
+        <p class="subtitle">Turn album metadata and lyrics into a clean EPUB you can keep offline.</p>
+      </div>
+      <nav class="site-nav" aria-label="Site links">
+        <a href="index.html">Home</a>
+        <a href="about.html" aria-current="page">About</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page-main">
+    <div class="page-shell">
+      <section class="hero-card">
+        <h2>What this site does</h2>
+        <p>
+          Song Lyrics to Ebook is a browser-based tool for finding an artist or album, loading its track list,
+          fetching lyrics, and packaging everything into a downloadable EPUB file.
+        </p>
+        <p>
+          The result is a single ebook you can read on an e-reader, archive for personal reference, or send to a Kindle-compatible workflow.
+        </p>
+      </section>
+
+      <section class="info-grid" aria-label="About the tool">
+        <article class="info-card">
+          <h3>How it works</h3>
+          <p>
+            The site uses MusicBrainz to search artists and releases, Cover Art Archive to retrieve album artwork,
+            and lyrics providers to collect the text for each song. Once you confirm an album, the EPUB is assembled
+            directly in your browser and downloaded to your device.
+          </p>
+        </article>
+
+        <article class="info-card">
+          <h3>Why someone may want to use it</h3>
+          <p>
+            This is useful when you want an offline lyric book for a favourite album, a cleaner reading format than a web page,
+            or a lightweight way to keep lyrics with artwork and track order preserved in one file.
+          </p>
+        </article>
+      </section>
+
+      <section class="workflow-card" aria-labelledby="workflow-title">
+        <h2 id="workflow-title">Suggested workflow</h2>
+        <p>
+          The most reliable path is to start with the artist, narrow to the right release, optionally add a Genius token for better lyric coverage,
+          then generate the EPUB once the track list looks correct.
+        </p>
+
+        <ol class="workflow-steps">
+          <li>Choose whether you want to search by artist or by album title.</li>
+          <li>Run a search and pick the matching artist or release from the results.</li>
+          <li>In artist mode, filter the release list if needed, then open the album you want.</li>
+          <li>Check the track list and decide whether to include artwork.</li>
+          <li>Add an optional Genius API token if you want broader or higher-quality lyric matches.</li>
+          <li>Create the ebook and keep the downloaded EPUB for personal, educational, non-commercial use.</li>
+        </ol>
+
+        <div class="workflow-diagram" aria-label="Workflow diagram">
+          <pre class="mermaid">
+flowchart TD
+    A[Choose search mode] --> B[Search artist or album]
+    B --> C[Select matching result]
+    C --> D{Artist mode?}
+    D -->|Yes| E[Pick release from album list]
+    D -->|No| F[Load tracks directly]
+    E --> G[Review tracks and artwork]
+    F --> G
+    G --> H[Optional: add Genius token]
+    H --> I[Create EPUB in browser]
+    I --> J[Download for personal use]
+          </pre>
+        </div>
+
+        <p class="workflow-note">
+          Everything after the search happens client-side in the browser, so there is no separate app to install for the web version.
+        </p>
+      </section>
+
+      <section class="tips-card">
+        <h2>When to use the web version</h2>
+        <ul class="tips-list">
+          <li>When you want a quick, no-install way to turn a single album into an EPUB.</li>
+          <li>When you are on a shared or locked-down machine and cannot run the desktop app.</li>
+          <li>When you want to preview a release and export it immediately from the browser.</li>
+        </ul>
+      </section>
+    </div>
+  </main>
+
+  <aside class="disclaimer-notice" role="note">
+    <p>
+      ⚠ <strong>Personal use only.</strong>
+      Lyrics remain the copyright of their respective owners and artists.
+      Generated ebooks should not be redistributed or published.
+    </p>
+  </aside>
+
+  <footer>
+    <p>
+      Back to <a href="index.html">the main tool</a> ·
+      <a href="https://github.com/dfbr/song-lyrics-to-ebook" target="_blank" rel="noopener">GitHub</a>
+    </p>
+  </footer>
+</body>
+</html>
